@@ -14,5 +14,5 @@ Civic issue reporting platform — FastAPI backend, Next.js frontend, AI-powered
 | Member | Area |
 |--------|------|
 | paninalinikanta352-collab | Project lead, integration |
-| Vanshita | _add your area_ |
+| Vanshita | Frontend |
 | Omkodilkar | _add your area_ |
