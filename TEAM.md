@@ -17,4 +17,4 @@
 |--------|------|--------|
 | <img src="https://github.com/paninalinikanta352-collab.png?size=40" width="40" alt=""> **paninalinikanta352-collab** | Project Lead · Integration | [@paninalinikanta352-collab](https://github.com/paninalinikanta352-collab) |
 | <img src="https://github.com/Vanshita-2007.png?size=40" width="40" alt=""> **Vanshita** | Frontend | [@Vanshita-2007](https://github.com/Vanshita-2007) |
-| <img src="https://github.com/omkodilkar.png?size=40" width="40" alt=""> **Omkodilkar** | AI Developer · Project Lead | [@omkodilkar](https://github.com/omkodilkar) |
+| <img src="https://github.com/omkodilkar.png?size=40" width="40" alt=""> **Omkodilkar** | AI Developer | [@omkodilkar](https://github.com/omkodilkar) |
