@@ -18,5 +18,3 @@
 | <img src="https://github.com/paninalinikanta352-collab.png?size=40" width="40" alt=""> **paninalinikanta352-collab** | Project Lead · Integration | [@paninalinikanta352-collab](https://github.com/paninalinikanta352-collab) |
 | <img src="https://github.com/Vanshita-2007.png?size=40" width="40" alt=""> **Vanshita** | Frontend | [@Vanshita-2007](https://github.com/Vanshita-2007) |
 | <img src="https://github.com/omkodilkar.png?size=40" width="40" alt=""> **Omkodilkar** | _add your area_ | [@omkodilkar](https://github.com/omkodilkar) |
-
-> Omkodilkar: to finish the credits, edit only the `_add your area_` cell above — don't touch the `|-----|` row under the header, that's what keeps the table alive.
