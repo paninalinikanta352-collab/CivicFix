@@ -1,0 +1,13 @@
+# Local environment and secrets
+Backend/.env
+
+# Python virtual environments and generated files
+Backend/.venv/
+Backend/**/__pycache__/
+Backend/**/*.py[cod]
+
+# Local runtime data
+database/*.db
+database/*.db-*
+uploads/*
+!uploads/.gitkeep

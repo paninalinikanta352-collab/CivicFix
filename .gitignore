@@ -1,0 +1,22 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# AI model files (153MB - setup script se download hoti hain)
+ai_models/
+
+# Node
+node_modules/
+.next/
+
+# Runtime data (photos, database) - ye kabhi push nahi karni
+uploads/
+*.db
+
+# Secrets
+.env
+
+# OS junk
+Thumbs.db
+.DS_Store
