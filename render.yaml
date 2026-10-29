@@ -1,0 +1,37 @@
+# Render Blueprint — CivicFix: FastAPI backend + Next.js frontend on the free tier.
+# Apply via Render Dashboard -> New + -> Blueprint -> this repo.
+
+services:
+  - type: web
+    name: civicfix-api
+    runtime: python
+    rootDir: Backend/Backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.4"
+      - key: CIVICFIX_SECRET_KEY
+        generateValue: true
+      - key: CIVICFIX_CORS_ORIGINS
+        sync: false          # frontend URL, set during apply
+      - key: CIVICFIX_ADMIN_EMAIL
+        sync: false          # first admin account, created on startup
+      - key: CIVICFIX_ADMIN_PASSWORD
+        sync: false
+      - key: CIVICFIX_ADMIN_NAME
+        value: CivicFix Admin
+
+  - type: web
+    name: civicfix-web
+    runtime: node
+    rootDir: frontend/frontend
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    plan: free
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_API_BASE
+        sync: false          # backend URL, set during apply
