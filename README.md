@@ -1,120 +1,205 @@
-# CivicFix
+<div align="center">
 
-CivicFix is a civic issue reporting and resolution platform. Residents can submit reports with a photo and location, then track progress. Administrators review and prioritize reports, assign municipal workers, and workers update the status of assigned issues.
+# 🏛️ CivicFix
 
-## Features
+**Spot it. Snap it. Fix it.** — a civic issue reporting and resolution platform.
 
-- Account registration and JWT-based login
-- Issue reports with a required JPEG, PNG, or WebP photo (up to 8 MB)
-- GPS coordinates and an optional address or landmark
-- Rule-based risk priority score from 0 to 100
-- Optional AI photo-analysis metadata
-- Resident issue tracking and status history
-- Admin tools for triage, worker creation, assignment, and statistics
-- Worker dashboard for assigned issues and progress updates
+Residents report civic problems with a photo and GPS location, admins triage and assign municipal workers, and workers keep the status live. No call centers, no paper registers.
 
-Risk scores are heuristic priority scores, not calibrated probabilities. The backend calculates them from the issue category, description, and location text; the frontend displays the returned score.
+![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)
+![Next.js](https://img.shields.io/badge/Frontend-Next.js-black?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)
+![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)
 
-## Technology
+[Features](#-features) · [How it works](#-how-it-works) · [Quickstart](#-quickstart) · [API](#-api-overview) · [Deployment](#-deployment) · [Team](#-team)
 
-- **Frontend:** Next.js 15 and React 18
-- **Backend:** Python and FastAPI
-- **Database:** SQLite
-- **Authentication:** JWT
+</div>
 
-## Repository layout
+---
 
-    CivicFix/
-    ├── Backend/
-    │   └── Backend/           # FastAPI application and requirements
-    ├── frontend/
-    │   └── frontend/          # Next.js application
-    ├── TEAM.md                # Team information
-    └── start_servers.bat      # Windows launcher
+## 📌 About
 
-The SQLite database is created at Backend/database/civicfix.db. Uploaded photos are stored under Backend/uploads/. These are local runtime data and should not be committed.
+CivicFix closes the loop between citizens and municipal workers — from *the pothole on my street* to *resolved*, with every step visible.
 
-## Run locally on Windows
+- A resident films the problem and attaches a photo, GPS coordinates, and an optional landmark
+- The backend scores it from 0–100 with an explainable priority heuristic
+- An admin triages the queue by priority and age, creates worker accounts and assigns them
+- The assigned worker updates the status at every stage, and the resident watches it happen
 
-Open two PowerShell windows from the repository root.
+## ✨ Features
 
-### Start the backend
+| | Feature | Details |
+|---|---|---|
+| 📸 | **Photo-first reports** | Required JPEG / PNG / WebP photo up to 8 MB, stored and served by the API |
+| 📍 | **Location capture** | GPS latitude/longitude plus an optional address or landmark |
+| 🧠 | **Priority scoring** | Explainable keyword heuristic — category baselines, description keywords, sensitive place terms |
+| 👤 | **Three roles** | `user`, `worker`, `admin` — enforced across every route |
+| 🕒 | **Status history** | Every transition recorded with actor + note: `reported → assigned → in_progress → resolved` |
+| 📊 | **Admin dashboard** | Queue sorted by risk and age, worker management, aggregate stats |
+| 🛠 | **Worker workspace** | Assigned issue list and progress updates from the field |
 
-    cd Backend\Backend
-    python -m venv .venv
-    .venv\Scripts\Activate.ps1
-    python -m pip install -r requirements.txt
-    Copy-Item .env.example .env
+## 🔀 How it works
 
-Edit Backend/Backend/.env and set CIVICFIX_SECRET_KEY to a long random value. To create an administrator on first startup, also set CIVICFIX_ADMIN_EMAIL and CIVICFIX_ADMIN_PASSWORD. Keep .env private; it is ignored by Git.
+```mermaid
+flowchart LR
+    A["🏠 Resident"] -- "📸 report + photo + GPS" --> B["⚙️ FastAPI"]
+    B --> C[("🗄️ SQLite")]
+    A -- "👀 track progress" --> B
+    D["🧑‍💼 Admin"] -- "triage · create workers · assign" --> B
+    E["👷 Worker"] -- "status updates" --> B
+```
 
-Then start the API:
+```mermaid
+flowchart LR
+    reported --> assigned
+    assigned --> in_progress
+    in_progress --> resolved
+    assigned -. admin preference .-> rejected
+```
 
-    python -m uvicorn main:app --reload
+The risk score on the backend (`by risk, then age`) is an explainable heuristic — not a calibrated probability and not a trained model. The frontend shows the returned `risk_percentage`:
 
-The API is at http://localhost:8000; interactive documentation is at http://localhost:8000/docs. Database tables are initialized at startup.
+| Range | Label |
+|---|---|
+| 0–39 | 🟢 Low |
+| 40–69 | 🟡 Medium |
+| 70–100 | 🔴 High |
 
-### Start the frontend
+<!-- 📸 Screenshots of the live app go here after deployment -->
 
-In a second window, return to the repository root if needed:
+## 🚀 Quickstart
 
-    cd frontend\frontend
-    Copy-Item .env.example .env.local
-    npm install
-    npm run dev
+**Prerequisites:** Python 3.12+, Node 20+ (or 22), npm
 
-The app is at http://localhost:3000. NEXT_PUBLIC_API_BASE in .env.local defaults to http://localhost:8000.
+Copy-Item commands are listed in PowerShell. Any terminal would run the same commands in a shell version.
 
-## Main API routes
+### 1. Start the backend
+
+```powershell
+cd Backend\Backend
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+```
+
+Edit `Backend/Backend/.env` and set `CIVICFIX_SECRET_KEY` to a long, random string. To bootstrap the first administrator on first startup, additionally set `CIVICFIX_ADMIN_EMAIL` and `CIVICFIX_ADMIN_PASSWORD`.
+
+```powershell
+python -m uvicorn main:app --reload
+```
+
+- API → `http://localhost:8000`
+- Interactive docs → `http://localhost:8000/docs`
+- Database file → `Backend/database/civicfix.db` (auto-created at startup)
+- Uploads → `Backend/uploads/`
+
+### 2. Start the frontend (second terminal)
+
+```powershell
+cd frontend\frontend
+Copy-Item .env.example .env.local
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`. The `NEXT_PUBLIC_API_BASE` in `.env.local` defaults to `http://localhost:8000`.
+
+<details>
+<summary><b>One-click launcher (Windows)</b></summary>
+
+`start_servers.bat` starts the API (`http://localhost:8000`) and web (http://localhost:3000) in two command windows from the repository checkout.
+</details>
+
+## 🔐 Environment variables
+
+| Variable | Where | Purpose |
+|---|---|---|
+| `CIVICFIX_SECRET_KEY` | Backend `.env` | JWT signing key — replace with a long, random secret |
+| `CIVICFIX_TOKEN_MINUTES` | Backend `.env` | Token lifetime (default `1440`) |
+| `CIVICFIX_CORS_ORIGINS` | Backend `.env` | Comma-separated allowed frontend origins |
+| `CIVICFIX_ADMIN_EMAIL` | Backend `.env` | Optional — creates the first admin on startup |
+| `CIVICFIX_ADMIN_PASSWORD` | Backend `.env` | Optional — password for the bootstrap admin |
+| `CIVICFIX_ADMIN_NAME` | Backend `.env` | Optional — display name of the bootstrap admin |
+| `NEXT_PUBLIC_API_BASE` | Frontend `.env.local` | Backend URL with no trailing slash |
+
+Real secrets are to be kept out of Git, never commit `.env`, `.env.local`, SQLite database files, or uploaded photo content.
+
+## 🌐 API overview
 
 | Method | Route | Purpose |
 |---|---|---|
-| POST | /api/auth/register | Register a resident account |
-| POST | /api/auth/login | Log in and receive a token |
-| GET | /api/auth/me | Get the signed-in account |
-| GET | /api/issues | Browse reports |
-| POST | /api/issues | Submit a report (authenticated multipart form with an image) |
-| GET | /api/issues/{id} | View a report |
-| PATCH | /api/issues/{id} | Edit report details (reporter or admin) |
-| GET | /api/issues/{id}/updates | View status history |
-| POST | /api/issues/{id}/status | Update status (assigned worker or admin) |
-| GET | /api/worker/assignments | List the signed-in worker's assignments |
-| GET, POST | /api/admin/workers | List or create worker accounts |
-| GET | /api/admin/issues | List reports ordered by risk and age |
-| POST | /api/admin/issues/{id}/assign | Assign a report to a worker |
-| GET | /api/admin/stats | View issue and worker statistics |
-| GET | /api/health | Check API availability |
+| `POST` | `/api/auth/register` | Register a resident account |
+| `POST` | `/api/auth/login` | Log in and receive a token |
+| `GET` | `/api/auth/me` | Current signed-in account |
+| `GET` | `/api/issues` | Browse reports (public) |
+| `POST` | `/api/issues` | Submit a report — authenticated multipart form + required photo. Optional `lat`,`lng`,`address` |
+| `GET` | `/api/issues/{id}` | One report (public) |
+| `PATCH` | `/api/issues/{id}` | Edit report (reporter or admin) |
+| `GET` | `/api/issues/{id}/updates` | Status history |
+| `POST` | `/api/issues/{id}/status` | Worker/admin status update |
+| `GET` | `/api/worker/assignments` | The signed-in worker's assigned reports |
+| `GET · POST` | `/api/admin/workers` | List or create worker accounts |
+| `GET` | `/api/admin/issues` | All reports ordered by risk and age |
+| `POST` | `/api/admin/issues/{id}/assign` | Assign a worker |
+| `GET` | `/api/admin/stats` | Agenda-level counts |
+| `GET` | `/api/health` | Liveness |
 
-Issue creation expects title, description, category, optional lat, lng, and address, plus a required image upload. Categories are roads, water, electricity, cleanliness, and other. Statuses are reported, assigned, in_progress, resolved, and rejected.
+Categories: `roads`, `water`, `electricity`, `cleanliness`, `other`
 
-## Risk display
+## 🧪 Tests
 
-Use the backend's risk_percentage response field (integer from 0 to 100) and display a label with the number:
+```powershell
+cd Backend\Backend
+python -m unittest discover -s tests -v
+```
 
-- **0–39:** Low
-- **40–69:** Medium
-- **70–100:** High
+## 📦 Deployment
 
-The score uses category baselines, description keywords, and sensitive-place terms in the address. Simple keyword rules can misread negation and context.
+This repo ships a **Render Blueprint** (`render.yaml`) so both services deploy from one apply.
 
-## Tests
+1. With the repo authorizing Render access, open **Render Dashboard → New → Blueprint → this repository**
+2. This wizard creates two services using the file's commands:
+   - `civicfix-api` — FastAPI on Python 3.12 (`pip install -r requirements.txt`, uvicorn)
+   - `civicfix-web` — Next.js on Node 22 (`npm install && npm run build`, `next start`)
+3. Set the `sync: false` variables when prompted — the backend's `CIVICFIX_CORS_ORIGINS` frontend URL, the `NEXT_PUBLIC_API_BASE` backend URL, and the bootstrap admin credentials
+4. Apply — both services build and deploy, and every push to `main` redeploythem automatically
 
-From the backend directory:
+The deployed instance is live:
 
-    cd Backend\Backend
-    python -m unittest discover -s tests -v
+- **App:** [civicfix-web.onrender.com](https://civicfix-web.onrender.com)
+- **API docs:** [civicfix-bl4k.onrender.com/docs](https://civicfix-bl4k.onrender.com/docs)
 
-## Configuration
+Free-tier instances sleep after inactivity — the first open takes about a minute to wake up. The SQLite database and uploaded photos reset on every restart or redeploy — fine for demos, not production persistence.
 
-Backend settings are listed in Backend/Backend/.env.example:
+## 🧗 Challenges I ran into
 
-- CIVICFIX_SECRET_KEY — signing key for JWTs; replace the example value
-- CIVICFIX_TOKEN_MINUTES — token lifetime
-- CIVICFIX_CORS_ORIGINS — comma-separated allowed frontend origins
-- CIVICFIX_ADMIN_EMAIL, CIVICFIX_ADMIN_PASSWORD, and CIVICFIX_ADMIN_NAME — optional initial administrator setup
+Real problems hit while building and deploying this — and what they taught.
 
-The frontend setting is NEXT_PUBLIC_API_BASE. Never commit real secrets, local database files, uploaded photos, or environment files.
+**CORS misbehaving between two live origins.** The API worked perfectly in curl but the deployed frontend still couldn't call it — preflights returned `400` with no `Access-Control-Allow-Origin` header. The allow-list still held the `localhost` default, and CORS failures are invisible outside a browser. Fixed by driving `CIVICFIX_CORS_ORIGINS` from environment configuration and keeping localhost in the list for local development. *Lesson: treat deploy endpoints as configuration, never hardcode them.*
 
-## Team
+**Render free tier wakes up slowly.** Services sleep after idle time — the first visitor waits about a minute on the wake-up screen. Documented instead of hidden; the trade-off is documented behavior, not a surprise.
 
-See TEAM.md for current team information and roles.
+**Free instances have no persistent disk.** SQLite databases and uploaded photos reset on every restart or redeploy. The platform is built so this only loses demo data, not user trust — a production rollout would swap in managed storage or Postgres.
+
+**Globally unique service URLs.** `civicfix-api` was already reserved, so the API went live as `civicfix-bl4k.onrender.com` — and the frontend's `NEXT_PUBLIC_API_BASE` must point at the real URL, not the intended one. *Lesson: the name you choose is not the URL you get.*
+
+**Location permission is not guaranteed.** The report flow depends on GPS, but browsers can deny geolocation. The form detects failure and blocks submission with a clear message rather than creating an issue that crews can't find. *Lesson: design for permission denial, not just success.*
+
+**Schema changes after data existed.** The `ai_analysis` column was added after tables were already created, so the backend runs a live migration on startup (`PRAGMA table_info` check + `ALTER TABLE`) — older local databases keep working without a manual upgrade step.
+
+## 👥 Team
+
+| Member | Role | GitHub |
+|--------|------|--------|
+| <img src="https://github.com/paninalinikanta352-collab.png?size=40" width="40" alt=""> **Nalinikanta Pani** | Project Lead · Backend & Integration | [@paninalinikanta352-collab](https://github.com/paninalinikanta352-collab) |
+| <img src="https://github.com/Vanshita-2007.png?size=40" width="40" alt=""> **Vanshita** | Frontend | [@Vanshita-2007](https://github.com/Vanshita-2007) |
+| <img src="https://github.com/omkodilkar.png?size=40" width="40" alt=""> **Omkodilkar** | AI Developer | [@omkodilkar](https://github.com/omkodilkar) |
+
+---
+
+<div align="center">
+<sub>Backend route details → <a href="Backend/Backend/README.md">Backend/Backend/README.md</a> · Team & roles → <a href="TEAM.md">TEAM.md</a></sub>
+</div>
