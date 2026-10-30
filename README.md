@@ -2,6 +2,8 @@
 
 # 🏛️ CivicFix
 
+![CivicFix banner](docs/civicfix-banner.gif)
+
 **Spot it. Snap it. Fix it.** — a civic issue reporting and resolution platform.
 
 Residents report civic problems with a photo and GPS location, admins triage and assign municipal workers, and workers keep the status live. No call centers, no paper registers.
@@ -13,7 +15,7 @@ Residents report civic problems with a photo and GPS location, admins triage and
 ![SQLite](https://img.shields.io/badge/Database-SQLite-003B57?logo=sqlite&logoColor=white)
 ![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)
 
-[Features](#-features) · [How it works](#-how-it-works) · [Quickstart](#-quickstart) · [API](#-api-overview) · [Deployment](#-deployment) · [Team](#-team)
+[Features](#-features) · [What's new](#-whats-new) · [How it works](#-how-it-works) · [Quickstart](#-quickstart) · [API](#-api-overview) · [Deployment](#-deployment) · [Team](#-team)
 
 </div>
 
@@ -43,6 +45,14 @@ CivicFix closes the loop between citizens and municipal workers — from *the po
 | 🏷 | **Manual category with AI helper** | The citizen always picks the category; AI never overrides it. One click on 🤖 Ask AI asks the configured Gemini model (`Backend/ai_categorizer.py`, via `POST /api/issues/category-suggest`) to suggest a category from title + description (strict JSON schema, confidence bound to 0–1). Failure, empty key, or disabled flag → no suggestion, never blocks a report. Set `CIVICFIX_GEMINI_API_KEY` to enable |
 | 🔐 | **OTP password reset + email verification** | `Backend/mail.py` + `/api/auth/forgot-password` + `/api/auth/reset-password` + `/api/auth/verify-request` + `/api/auth/verify-confirm` — 6-digit codes hashed with a per-request salt, 10-minute expiry, 5-attempt limit, 60-second resend cooldown, one active code per email per purpose, constant-time verification, burned codes delete themselves. Signup auto-emails a verification code; the dashboard shows a verify banner on unverified accounts. SMTP is env-configured (Brevo/Gmail); without SMTP the endpoints fall back to dev mode and return the code for local testing |
 | 🌓 | **Dark & light mode** | CSS-variable theme system with a topbar toggle — preference persists in localStorage, defaults to dark, no flash on reload (an inline bootstrap script applies the stored theme before first paint) |
+
+## 🆕 What's new
+
+Latest drop, all three live in the app right now:
+
+- 🌓 **Dark & light mode** — one click in the topbar, saved across reloads, dark by default
+- 🔐 **OTP email verification + password reset** — signup auto-emails a 6-digit code, forgot/reset flows built into the login page (SMTP env-configured)
+- 🏷 **Manual category with AI helper** — the citizen always picks the category; 🤖 Ask AI only suggests, never overrides
 
 ## 🔀 How it works
 
