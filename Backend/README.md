@@ -4,9 +4,9 @@ FastAPI and SQLite API for civic issue reporting, admin assignment, and worker p
 
 ## Run locally (PowerShell)
 
-The Python source and `requirements.txt` are in `CivicFix\Backend\Backend`. In PowerShell:
+The Python source and `requirements.txt` are in `Backend/`. From the repo root:
 
-    cd C:\Users\panin\OneDrive\Documents\CivicFix\Backend\Backend
+    cd Backend
     python -m venv .venv
     .venv\Scripts\Activate.ps1
     python -m pip install -r requirements.txt
@@ -14,7 +14,7 @@ The Python source and `requirements.txt` are in `CivicFix\Backend\Backend`. In P
 
 The app reads local settings from `.env` in this folder. `.env.example` lists the available settings. The real `.env` is ignored by Git. Set `CIVICFIX_ADMIN_EMAIL` and `CIVICFIX_ADMIN_PASSWORD` in `.env` before first startup if you want to create an initial admin account.
 
-The database is stored at `CivicFix\Backend\database\civicfix.db`. Uploaded photos are stored at `CivicFix\Backend\uploads` and served at `/uploads/<filename>`. Issue creation accepts JPEG, PNG, or WebP photos up to 8 MB. Interactive API docs are at http://127.0.0.1:8000/docs.
+The database is stored at `database/civicfix.db` at the repo root. Uploaded photos are stored at `uploads/` at the repo root and served at `/uploads/<filename>`. Issue creation accepts JPEG, PNG, or WebP photos up to 8 MB. Interactive API docs are at http://127.0.0.1:8000/docs.
 
 ## Main routes
 

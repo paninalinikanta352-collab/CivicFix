@@ -39,6 +39,7 @@ CivicFix closes the loop between citizens and municipal workers — from *the po
 | 🕒 | **Status history** | Every transition recorded with actor + note: `reported → assigned → in_progress → resolved` |
 | 📊 | **Admin dashboard** | Queue sorted by risk and age, worker management, aggregate stats |
 | 🛠 | **Worker workspace** | Assigned issue list and progress updates from the field |
+| 🤖 | **AI photo verification (repo highlight)** | `Backend/ai_detector.py` — zero-shot CLIP (INT8 ONNX) that reads the uploaded photo and cross-checks it against the report title, returning `{best, confidence, matches_title, suggested_category}`. Ships today as a runnable CLI with frontend plumbing (`ai_analysis` column) in place; upload-flow integration is the next milestone |
 
 ## 🔀 How it works
 
@@ -78,14 +79,14 @@ Copy-Item commands are listed in PowerShell. Any terminal would run the same com
 ### 1. Start the backend
 
 ```powershell
-cd Backend\Backend
+cd Backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Edit `Backend/Backend/.env` and set `CIVICFIX_SECRET_KEY` to a long, random string. To bootstrap the first administrator on first startup, additionally set `CIVICFIX_ADMIN_EMAIL` and `CIVICFIX_ADMIN_PASSWORD`.
+Edit `Backend/.env` and set `CIVICFIX_SECRET_KEY` to a long, random string. To bootstrap the first administrator on first startup, additionally set `CIVICFIX_ADMIN_EMAIL` and `CIVICFIX_ADMIN_PASSWORD`.
 
 ```powershell
 python -m uvicorn main:app --reload
@@ -93,13 +94,13 @@ python -m uvicorn main:app --reload
 
 - API → `http://localhost:8000`
 - Interactive docs → `http://localhost:8000/docs`
-- Database file → `Backend/database/civicfix.db` (auto-created at startup)
-- Uploads → `Backend/uploads/`
+- Database file → `database/civicfix.db` at the repo root (auto-created at startup)
+- Uploads → `uploads/` at the repo root
 
 ### 2. Start the frontend (second terminal)
 
 ```powershell
-cd frontend\frontend
+cd frontend
 Copy-Item .env.example .env.local
 npm install
 npm run dev
@@ -152,7 +153,7 @@ Categories: `roads`, `water`, `electricity`, `cleanliness`, `other`
 ## 🧪 Tests
 
 ```powershell
-cd Backend\Backend
+cd Backend
 python -m unittest discover -s tests -v
 ```
 
@@ -165,7 +166,7 @@ This repo ships a **Render Blueprint** (`render.yaml`) so both services deploy f
    - `civicfix-api` — FastAPI on Python 3.12 (`pip install -r requirements.txt`, uvicorn)
    - `civicfix-web` — Next.js on Node 22 (`npm install && npm run build`, `next start`)
 3. Set the `sync: false` variables when prompted — the backend's `CIVICFIX_CORS_ORIGINS` frontend URL, the `NEXT_PUBLIC_API_BASE` backend URL, and the bootstrap admin credentials
-4. Apply — both services build and deploy, and every push to `main` redeploythem automatically
+4. Apply — both services build and deploy, and every push to `main` redeploys them automatically
 
 The deployed instance is live:
 
@@ -174,7 +175,7 @@ The deployed instance is live:
 
 Free-tier instances sleep after inactivity — the first open takes about a minute to wake up. The SQLite database and uploaded photos reset on every restart or redeploy — fine for demos, not production persistence.
 
-## 🧗 Challenges I ran into
+## 🧗 Challenges we ran into
 
 Real problems hit while building and deploying this — and what they taught.
 
@@ -201,5 +202,5 @@ Real problems hit while building and deploying this — and what they taught.
 ---
 
 <div align="center">
-<sub>Backend route details → <a href="Backend/Backend/README.md">Backend/Backend/README.md</a> · Team & roles → <a href="TEAM.md">TEAM.md</a></sub>
+<sub>Backend route details → <a href="Backend/README.md">Backend/README.md</a> · Team & roles → <a href="TEAM.md">TEAM.md</a></sub>
 </div>

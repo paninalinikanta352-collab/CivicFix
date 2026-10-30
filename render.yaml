@@ -5,7 +5,7 @@ services:
   - type: web
     name: civicfix-api
     runtime: python
-    rootDir: Backend/Backend
+    rootDir: Backend
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
     plan: free
@@ -26,7 +26,7 @@ services:
   - type: web
     name: civicfix-web
     runtime: node
-    rootDir: frontend/frontend
+    rootDir: frontend
     buildCommand: npm install && npm run build
     startCommand: npm run start
     plan: free

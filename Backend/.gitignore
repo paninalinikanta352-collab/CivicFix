@@ -1,10 +1,13 @@
 # Local environment and secrets
-Backend/.env
+.env
 
 # Python virtual environments and generated files
-Backend/.venv/
-Backend/**/__pycache__/
-Backend/**/*.py[cod]
+.venv/
+__pycache__/
+*.py[cod]
+
+# AI model weights (downloaded on demand, ~150 MB)
+ai_models/
 
 # Local runtime data
 database/*.db
