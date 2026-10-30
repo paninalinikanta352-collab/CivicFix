@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import VerifyEmailCard from "../../components/VerifyEmailCard";
 import { API_BASE, apiErrorMessage, saveAuth } from "../../lib/api";
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // After a successful signup: step 2 asks for the emailed verification code.
+  const [signup, setSignup] = useState(null); // {verification, user}
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -37,13 +42,31 @@ export default function RegisterPage() {
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(apiErrorMessage(data, "Registration failed."));
       saveAuth(data.access_token, data.user);
-      window.location.href = "/dashboard";
+      setSignup(data); // moving to the OTP step
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   };
+
+  if (signup) {
+    return (
+      <main className="wrap">
+        <section className="form-card auth-card" style={{ maxWidth: 480 }}>
+          <VerifyEmailCard
+            email={signup.user.email}
+            initialDevCode={signup.verification?.otp || ""}
+            onVerified={() => router.push("/dashboard")}
+            onDismiss={() => router.push("/dashboard")}
+          />
+          <p className="hint center">
+            Already verified before? <Link href="/dashboard">Go to dashboard →</Link>
+          </p>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="wrap">
@@ -69,6 +92,7 @@ export default function RegisterPage() {
           <button className="btn primary full" type="submit" disabled={loading}>
             {loading ? "Creating..." : "Create Account"}
           </button>
+          <p className="hint">A 6-digit verification code is emailed right after signup.</p>
         </form>
         <p className="hint">Already registered? <Link href="/login">Login instead →</Link></p>
       </section>

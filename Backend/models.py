@@ -19,13 +19,21 @@ class UserPublic(BaseModel):
     name: str
     email: EmailStr
     role: Role
+    verified: bool = False
     created_at: str
     model_config = ConfigDict(from_attributes=True)
+
+class OtpNotice(BaseModel):
+    """Delivery status for an emailed OTP; dev mode may include the code."""
+    delivery: str  # 'email' when real SMTP delivered, 'dev' otherwise
+    message: str = ''
+    otp: str | None = None
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = 'bearer'
     user: UserPublic
+    verification: OtpNotice | None = None
 
 class IssueCreate(BaseModel):
     title: str = Field(min_length=4, max_length=160)
@@ -61,6 +69,13 @@ class UserResetPassword(BaseModel):
     email: EmailStr
     code: str = Field(min_length=6, max_length=6, pattern=r'^\d{6}$')
     new_password: str = Field(min_length=8, max_length=128)
+
+class UserVerifyRequest(BaseModel):
+    email: EmailStr
+
+class UserVerifyConfirm(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6, pattern=r'^\d{6}$')
 
 class IssuePublic(BaseModel):
     id: int

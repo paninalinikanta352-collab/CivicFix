@@ -25,7 +25,7 @@ def workers(admin=Depends(require_role('admin'))):
 def create_worker(payload: WorkerCreate, admin=Depends(require_role('admin'))):
     try:
         with get_db() as conn:
-            cursor = conn.execute("INSERT INTO users(name,email,password_hash,role) VALUES(?,?,?,'worker')", (payload.name.strip(), payload.email.lower(), hash_password(payload.password)))
+            cursor = conn.execute("INSERT INTO users(name,email,password_hash,role,email_verified) VALUES(?,?,?,'worker',1)", (payload.name.strip(), payload.email.lower(), hash_password(payload.password)))
             row = conn.execute('SELECT id,name,email,role,created_at FROM users WHERE id=?', (cursor.lastrowid,)).fetchone()
     except sqlite3.IntegrityError:
         raise HTTPException(status_code=409, detail='An account with this email already exists')

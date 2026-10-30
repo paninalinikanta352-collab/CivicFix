@@ -24,6 +24,15 @@ export function saveAuth(token, user) {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
 }
 
+// Merge a patch (e.g. {verified: true}) into the stored user without
+// touching the token.
+export function updateUser(patch) {
+  if (typeof window === "undefined") return;
+  const user = getUser();
+  if (!user) return;
+  localStorage.setItem(USER_KEY, JSON.stringify({ ...user, ...patch }));
+}
+
 export function clearAuth() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);

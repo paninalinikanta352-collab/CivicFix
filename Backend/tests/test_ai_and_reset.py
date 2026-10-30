@@ -1,9 +1,10 @@
-"""Reset-password OTP flow + AI category detection tests.
+"""Reset-password OTP flow + AI category helper tests.
 
 Runs against a throwaway SQLite DB in a temp dir. The OTP flow is tested in
-dev mode (SMTP unset, so the code is returned in the response). AI detection
-is tested both as a unit (stubbed Gemini HTTP layer) and through the real
-issue-creation endpoint with a stubbed detector.
+dev mode (SMTP unset, so the code is returned in the response). AI helpers
+are tested as a unit (stubbed Gemini HTTP layer) and through the real
+issue endpoints - creation must never override the user's manual category,
+and /api/issues/category-suggest must only return a hint.
 
 Run: cd Backend && python -m unittest discover -s tests -v
 """
@@ -222,36 +223,66 @@ class CreateIssueAiIntegrationTests(unittest.TestCase):
             files={"image": ("photo.png", _PNG_BYTES, "image/png")},
         )
 
-    def test_without_llm_key_category_stays_other(self):
-        r = self._create()
+    def _create(self, category="other", title="Massive garbage dump behind market", description="Trash bags piled up for a week near the market entrance"):
+        return self.client.post(
+            "/api/issues",
+            headers=self.headers,
+            data={"title": title, "description": description, "category": category},
+            files={"image": ("photo.png", _PNG_BYTES, "image/png")},
+        )
+
+    def test_category_always_stays_as_picked(self):
+        r = self._create(category="other")
         self.assertEqual(201, r.status_code)
         body = r.json()
         self.assertEqual("other", body["category"])
-        self.assertEqual("default", body["category_source"])
+        self.assertEqual("user", body["category_source"], "'other' is a manual pick now, never an AI swap")
 
-    def test_stubbed_detector_sets_category_and_source(self):
+    def test_ai_never_overrides_the_users_pick(self):
         with patch.object(
             issues_router,
             "detect_category",
             return_value={"category": "cleanliness", "confidence": 0.92, "detail": "gemini"},
-        ):
-            r = self._create()
-        self.assertEqual(201, r.status_code)
-        body = r.json()
-        self.assertEqual("cleanliness", body["category"])
-        self.assertEqual("ai", body["category_source"])
-
-    def test_explicit_category_is_never_overridden(self):
-        with patch.object(
-            issues_router,
-            "detect_category",
-            return_value={"category": "water", "confidence": 0.99, "detail": "gemini"},
         ):
             r = self._create(category="roads", title="Pothole harvesting zone", description="Deep potholes installed by the municipality")
         self.assertEqual(201, r.status_code)
         body = r.json()
         self.assertEqual("roads", body["category"], "explicit user choice must win over AI")
         self.assertEqual("user", body["category_source"])
+
+    def test_category_suggest_endpoint_returns_hint(self):
+        with patch.object(
+            issues_router,
+            "detect_category",
+            return_value={"category": "cleanliness", "confidence": 0.8, "detail": "gemini"},
+        ):
+            r = self.client.post(
+                "/api/issues/category-suggest",
+                headers=self.headers,
+                json={"title": "Garbage mountains", "description": "Trash piled near the market for a week", "category": "other"},
+            )
+        self.assertEqual(200, r.status_code)
+        self.assertEqual("cleanliness", r.json()["category"])
+
+        # nothing got created by asking for a suggestion
+        feed = self.client.get("/api/issues", headers=self.headers)
+        self.assertEqual(
+            0,
+            len([i for i in feed.json()["items"] if i["title"] == "Garbage mountains"]),
+            "suggest endpoint must not create issues",
+        )
+
+    def test_category_suggest_falls_back_to_none(self):
+        import os
+
+        with patch.dict(os.environ, {"CIVICFIX_LLM_ENABLED": "false"}):
+            r = self.client.post(
+                "/api/issues/category-suggest",
+                headers=self.headers,
+                json={"title": "Mystery problem out there", "description": "Something is broken near my street area"},
+            )
+        self.assertEqual(200, r.status_code)
+        self.assertIsNone(r.json()["category"], "no suggestion provider -> no suggestion, not an error")
 
 
 if __name__ == "__main__":

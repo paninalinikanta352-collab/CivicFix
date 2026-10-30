@@ -29,10 +29,12 @@ def current_user(token: str = Depends(oauth2_scheme)):
     except (JWTError, ValueError, TypeError):
         raise invalid
     with get_db() as conn:
-        user = conn.execute('SELECT id,name,email,role,created_at FROM users WHERE id=?', (user_id,)).fetchone()
+        user = conn.execute('SELECT id,name,email,role,email_verified,created_at FROM users WHERE id=?', (user_id,)).fetchone()
     if user is None:
         raise invalid
-    return dict(user)
+    user = dict(user)
+    user['verified'] = bool(user.pop('email_verified', 0))
+    return user
 
 def require_role(*roles):
     def dependency(user=Depends(current_user)):

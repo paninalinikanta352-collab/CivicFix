@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import RiskBadge from "../../components/RiskBadge";
+import VerifyEmailCard from "../../components/VerifyEmailCard";
 import { API_BASE, apiErrorMessage, getUser, getToken, parseAiAnalysis } from "../../lib/api";
 
 export default function Dashboard() {
@@ -12,6 +13,8 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sessionExpired, setSessionExpired] = useState(false);
+  const [meUser, setMeUser] = useState(null);
+  const [verifyDismissed, setVerifyDismissed] = useState(false);
 
   useEffect(() => {
     const user = getUser();
@@ -19,6 +22,7 @@ export default function Dashboard() {
       router.replace("/login");
       return;
     }
+    setMeUser(user);
     (async () => {
       try {
         const res = await fetch(`${API_BASE}/api/issues?limit=100`, {
@@ -57,6 +61,15 @@ export default function Dashboard() {
   return (
     <main className="wrap">
       <h2>My Reported Issues</h2>
+      {meUser && !meUser.verified && !verifyDismissed && (
+        <div className="verify-banner">
+          <VerifyEmailCard
+            email={meUser.email}
+            onVerified={() => setMeUser({ ...meUser, verified: true })}
+            onDismiss={() => setVerifyDismissed(true)}
+          />
+        </div>
+      )}
       {error && <div className="error">⚠ {error}</div>}
       {loading && <p className="hint">Loading issues…</p>}
 

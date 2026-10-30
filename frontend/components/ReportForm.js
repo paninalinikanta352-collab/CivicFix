@@ -7,10 +7,19 @@ import { API_BASE, apiErrorMessage, getToken, parseAiAnalysis } from "../lib/api
 const MAX_MB = 8;
 const ACCEPT = { "image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp" };
 
+const CATEGORIES = [
+  { value: "roads", label: "Roads and potholes" },
+  { value: "water", label: "Water" },
+  { value: "electricity", label: "Electricity" },
+  { value: "cleanliness", label: "Cleanliness" },
+  { value: "other", label: "Other" },
+];
+const categoryLabel = (value) => CATEGORIES.find((c) => c.value === value)?.label || value;
+
 export default function ReportForm() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("roads");
+  const [category, setCategory] = useState(""); // empty = citizen must pick; AI only suggests
   const [address, setAddress] = useState("");
   const [lat, setLat] = useState(null);
   const [lng, setLng] = useState(null);
@@ -20,6 +29,8 @@ export default function ReportForm() {
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [aiSuggestion, setAiSuggestion] = useState(null); // {category, confidence} | {unavailable: true}
+  const [suggesting, setSuggesting] = useState(false);
   const fileRef = useRef(null);
 
   useEffect(() => {
@@ -60,6 +71,41 @@ export default function ReportForm() {
     );
   };
 
+  const suggestCategory = async () => {
+    setError("");
+    setAiResult(null);
+    const token = getToken();
+    if (!token) {
+      setError("Please log in first.");
+      return;
+    }
+    if (title.trim().length < 4 || description.trim().length < 8) {
+      setError("Type the title (4+ chars) and description (8+ chars) first, so AI has something to read.");
+      return;
+    }
+    setSuggesting(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/issues/category-suggest`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ title: title.trim(), description: description.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(apiErrorMessage(data, "AI suggestion failed. Pick a category yourself."));
+      if (data.category) {
+        setCategory(data.category);
+        setAiSuggestion({ category: data.category, confidence: data.confidence });
+      } else {
+        setAiSuggestion({ unavailable: true });
+      }
+    } catch (err) {
+      setAiSuggestion({ unavailable: true });
+      setError(err.message || "AI suggestion failed. Pick a category yourself.");
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
     setError("");
@@ -80,6 +126,10 @@ export default function ReportForm() {
     }
     if (!image) {
       setError("Add a photo of the problem.");
+      return;
+    }
+    if (!category) {
+      setError("Pick a category — or ask AI for a suggestion above.");
       return;
     }
     if (lat === null || lng === null) {
@@ -109,10 +159,12 @@ export default function ReportForm() {
       setDone(true);
       setTitle("");
       setDescription("");
-      setCategory("roads");
+      setCategory("");
       setAddress("");
       setLat(null);
       setLng(null);
+      setAiSuggestion(null);
+      setSuggesting(false);
       if (preview) URL.revokeObjectURL(preview);
       setImage(null);
       setPreview("");
@@ -158,13 +210,32 @@ export default function ReportForm() {
       <textarea id="description" value={description} maxLength={5000} onChange={(e) => setDescription(e.target.value)}
         placeholder="What you saw, since when, and why it is dangerous... (mention words like 'accident', 'fire', 'leak', 'school' so risk scoring picks them up)" />
       <label htmlFor="category">Category</label>
-      <select id="category" value={category} onChange={(e) => setCategory(e.target.value)}>
-        <option value="roads">Roads and potholes</option>
-        <option value="water">Water</option>
-        <option value="electricity">Electricity</option>
-        <option value="cleanliness">Cleanliness</option>
-        <option value="other">Other</option>
-      </select>
+      <div className="rowline">
+        <select id="category" value={category} onChange={(e) => setCategory(e.target.value)} style={{ flex: "1 1 220px" }}>
+          <option value="" disabled>Choose a category…</option>
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="btn"
+          onClick={suggestCategory}
+          disabled={suggesting || submitting}
+          title="AI reads your title + description and suggests a category - you always decide"
+        >
+          {suggesting ? "🤖 Thinking..." : "🤖 Ask AI"}
+        </button>
+      </div>
+      {aiSuggestion?.unavailable && (
+        <p className="hint">🤖 AI suggestion unavailable right now — pick a category yourself.</p>
+      )}
+      {aiSuggestion?.category && (
+        <p className="hint">
+          🤖 AI suggests: <b>{categoryLabel(aiSuggestion.category)}</b>
+          {aiSuggestion.confidence != null && ` (${Math.round(aiSuggestion.confidence * 100)}%)`} — preselected above; you can change it.
+        </p>
+      )}
       <label htmlFor="address">Street or landmark (optional)</label>
       <input id="address" value={address} maxLength={500} onChange={(e) => setAddress(e.target.value)}
         placeholder="e.g. Near Gate 2, behind the school" />

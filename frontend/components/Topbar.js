@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import ThemeToggle from "./ThemeToggle";
 import { getUser, clearAuth } from "../lib/api";
 
 const LINKS = [
@@ -44,6 +45,7 @@ export default function Topbar() {
         ))}
       </nav>
       <div className="top-right">
+        <ThemeToggle />
         {user ? (
           <>
             <span className="badge" title={user.email}>{user.name} · {user.role}</span>

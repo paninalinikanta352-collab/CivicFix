@@ -1,8 +1,9 @@
 """Email delivery + OTP generation/verification for CivicFix.
 
-Password reset uses a 6-digit one-time code, stored hashed (sha256 of code
-plus a per-row random salt) with a 10-minute expiry and a 5-attempt limit.
-One active OTP per email (the latest send replaces older rows).
+OTP codes (password reset and email verification) are 6 digits, stored
+hashed (sha256 of code plus a per-row random salt) with a 10-minute expiry
+and a 5-attempt limit. One active OTP per email per purpose; the latest
+send replaces older rows for the same (email, purpose).
 
 SMTP is fully env-driven:
   CIVICFIX_SMTP_HOST     - e.g. smtp-relay.brevo.com (Brevo) or smtp.gmail.com

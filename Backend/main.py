@@ -21,7 +21,7 @@ async def lifespan(app: FastAPI):
         with get_db() as conn:
             exists = conn.execute('SELECT 1 FROM users WHERE email=? COLLATE NOCASE', (admin_email,)).fetchone()
             if not exists:
-                conn.execute("INSERT INTO users(name,email,password_hash,role) VALUES(?,?,?,'admin')", (os.getenv('CIVICFIX_ADMIN_NAME', 'CivicFix Admin'), admin_email, hash_password(admin_password)))
+                conn.execute("INSERT INTO users(name,email,password_hash,role,email_verified) VALUES(?,?,?,?,1)", (os.getenv('CIVICFIX_ADMIN_NAME', 'CivicFix Admin'), admin_email, hash_password(admin_password), 'admin'))
     yield
 
 app = FastAPI(title='CivicFix API', description='Report civic issues, assign workers, and track resolution progress.', version='1.1.0', lifespan=lifespan)

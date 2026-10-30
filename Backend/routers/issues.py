@@ -20,6 +20,21 @@ IMAGE_SIGNATURES = {
     'image/webp': (b'RIFF', '.webp'),
 }
 
+@router.post('/category-suggest')
+async def suggest_category(payload: IssueCreate, user=Depends(current_user)):
+    """AI helper: suggest a category from title + description.
+
+    The suggestion is never stored and never overrides anything - the citizen
+    still picks the category themselves. Returns category=None when the
+    backend has no usable suggestion (no API key, offline, or bad response).
+    """
+    detected = await run_in_threadpool(
+        detect_category, payload.title.strip(), payload.description.strip()
+    )
+    if not detected:
+        return {'category': None, 'confidence': None, 'detail': 'unavailable'}
+    return detected
+
 @router.get('', response_model=IssueList)
 def list_issues(category: str | None = None, issue_status: str | None = Query(default=None, alias='status'), limit: int = Query(default=20, ge=1, le=100), offset: int = Query(default=0, ge=0)):
     clauses, values = [], []
@@ -74,17 +89,10 @@ async def create_issue(
     image_path = UPLOAD_DIR / filename
     image_path.write_bytes(contents)
 
-    # Optional AI category detection: when the citizen left the category as
-    # 'other', ask the configured LLM to classify from title + description.
-    # Never blocks reporting - detect_category returns None on any failure.
+    # The citizen picks the category - AI never overrides it (manual selection,
+    # exactly as chosen). The photo analysis below still records clues in
+    # ai_analysis for later review, but it stays metadata only.
     category_source = 'user'
-    if category == 'other':
-        detected = await run_in_threadpool(detect_category, title, description)
-        if detected:
-            category = detected['category']
-            category_source = 'ai'
-        else:
-            category_source = 'default'
 
     risk = calculate_risk_percentage(category, description, address or "")
     # Optional AI enhancement: inspect the photo and cross-check the title.
