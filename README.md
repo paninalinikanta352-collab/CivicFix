@@ -39,7 +39,9 @@ CivicFix closes the loop between citizens and municipal workers — from *the po
 | 🕒 | **Status history** | Every transition recorded with actor + note: `reported → assigned → in_progress → resolved` |
 | 📊 | **Admin dashboard** | Queue sorted by risk and age, worker management, aggregate stats |
 | 🛠 | **Worker workspace** | Assigned issue list and progress updates from the field |
-| 🤖 | **AI photo verification (repo highlight)** | `Backend/ai_detector.py` — zero-shot CLIP (INT8 ONNX) that reads the uploaded photo and cross-checks it against the report title, returning `{best, confidence, matches_title, suggested_category}`. Ships today as a runnable CLI with frontend plumbing (`ai_analysis` column) in place; upload-flow integration is the next milestone |
+| 🤖 | **AI photo verification (repo highlight)** | `Backend/ai_detector.py` — zero-shot CLIP (INT8 ONNX) runs inside the upload flow: reads the photo, cross-checks it against the report title and stores `{best, confidence, matches_title, suggested_category}` as `ai_analysis`. Model files are optional — without them the check is silently skipped and reporting is unaffected |
+| 🏷 | **AI category auto-detection** | `Backend/ai_categorizer.py` — reports left as `other` are classified by the configured Gemini model (strict JSON schema, confidence bound to 0–1) into `roads / water / electricity / cleanliness / other`. Failure, empty key, or disabled flag → detection is skipped, never blocks a report. Set `CIVICFIX_GEMINI_API_KEY` to enable |
+| 🔐 | **OTP password reset** | `Backend/mail.py` + `/api/auth/forgot-password` + `/api/auth/reset-password` — 6-digit code hashed with a per-request salt, 10-minute expiry, 5-attempt limit, 60-second resend cooldown, one active code per email, constant-time verification. SMTP is env-configured (Brevo/Gmail); without SMTP the endpoint falls back to dev mode and returns the code for local testing |
 
 ## 🔀 How it works
 
@@ -124,6 +126,9 @@ Open `http://localhost:3000`. The `NEXT_PUBLIC_API_BASE` in `.env.local` default
 | `CIVICFIX_ADMIN_EMAIL` | Backend `.env` | Optional — creates the first admin on startup |
 | `CIVICFIX_ADMIN_PASSWORD` | Backend `.env` | Optional — password for the bootstrap admin |
 | `CIVICFIX_ADMIN_NAME` | Backend `.env` | Optional — display name of the bootstrap admin |
+| `CIVICFIX_GEMINI_API_KEY` | Backend `.env` | Optional — Google AI Studio key enabling AI category auto-detection |
+| `CIVICFIX_GEMINI_MODEL` | Backend `.env` | Optional — defaults to `gemini-2.0-flash` |
+| `CIVICFIX_SMTP_HOST` / `_PORT` / `_USER` / `_PASSWORD` / `_FROM` | Backend `.env` | Optional — SMTP for OTP email delivery; unset = dev mode returns the code |
 | `NEXT_PUBLIC_API_BASE` | Frontend `.env.local` | Backend URL with no trailing slash |
 
 Real secrets are to be kept out of Git, never commit `.env`, `.env.local`, SQLite database files, or uploaded photo content.
@@ -135,6 +140,8 @@ Real secrets are to be kept out of Git, never commit `.env`, `.env.local`, SQLit
 | `POST` | `/api/auth/register` | Register a resident account |
 | `POST` | `/api/auth/login` | Log in and receive a token |
 | `GET` | `/api/auth/me` | Current signed-in account |
+| `POST` | `/api/auth/forgot-password` | Email a 6-digit OTP (dev mode returns the code when SMTP is unset) |
+| `POST` | `/api/auth/reset-password` | Verify the OTP and set a new password |
 | `GET` | `/api/issues` | Browse reports (public) |
 | `POST` | `/api/issues` | Submit a report — authenticated multipart form + required photo. Optional `lat`,`lng`,`address` |
 | `GET` | `/api/issues/{id}` | One report (public) |

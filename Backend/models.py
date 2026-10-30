@@ -54,6 +54,14 @@ class AssignWorker(BaseModel):
 class WorkerCreate(UserRegister):
     pass
 
+class UserForgotPassword(BaseModel):
+    email: EmailStr
+
+class UserResetPassword(BaseModel):
+    email: EmailStr
+    code: str = Field(min_length=6, max_length=6, pattern=r'^\d{6}$')
+    new_password: str = Field(min_length=8, max_length=128)
+
 class IssuePublic(BaseModel):
     id: int
     title: str
@@ -68,6 +76,7 @@ class IssuePublic(BaseModel):
     reporter_id: int
     assigned_worker_id: int | None
     ai_analysis: str | None = None
+    category_source: str | None = None
     created_at: str
     updated_at: str
 

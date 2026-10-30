@@ -3,8 +3,10 @@ from pathlib import Path
 from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi import File, Form, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from ai_detector import analyze_photo
 from ai_service import calculate_risk_percentage
+from ai_categorizer import detect_category
 from auth import current_user, require_role
 from database import get_db
 from models import IssueCreate, IssueList, IssuePatch, IssuePublic, IssueStatus, IssueUpdatePublic, StatusUpdate
@@ -71,16 +73,29 @@ async def create_issue(
     filename = f'{uuid4().hex}{extension}'
     image_path = UPLOAD_DIR / filename
     image_path.write_bytes(contents)
+
+    # Optional AI category detection: when the citizen left the category as
+    # 'other', ask the configured LLM to classify from title + description.
+    # Never blocks reporting - detect_category returns None on any failure.
+    category_source = 'user'
+    if category == 'other':
+        detected = await run_in_threadpool(detect_category, title, description)
+        if detected:
+            category = detected['category']
+            category_source = 'ai'
+        else:
+            category_source = 'default'
+
     risk = calculate_risk_percentage(category, description, address or "")
     # Optional AI enhancement: inspect the photo and cross-check the title.
     # Every failure inside analyze_photo returns None, so reporting still works
     # even without the model files installed. Risk score is never touched.
-    ai_result = analyze_photo(contents, title)
+    ai_result = await run_in_threadpool(analyze_photo, contents, title)
     ai_json = json.dumps(ai_result) if ai_result else None
     try:
         with get_db() as conn:
-            cursor = conn.execute('''INSERT INTO issues(title,description,category,latitude,longitude,address,photo_url,risk_percentage,ai_analysis,reporter_id)
-              VALUES(?,?,?,?,?,?,?,?,?,?)''', (title, description, category, latitude, longitude, address, f'/uploads/{filename}', risk, ai_json, user['id']))
+            cursor = conn.execute('''INSERT INTO issues(title,description,category,latitude,longitude,address,photo_url,risk_percentage,ai_analysis,category_source,reporter_id)
+              VALUES(?,?,?,?,?,?,?,?,?,?,?)''', (title, description, category, latitude, longitude, address, f'/uploads/{filename}', risk, ai_json, category_source, user['id']))
             issue = conn.execute('SELECT * FROM issues WHERE id=?', (cursor.lastrowid,)).fetchone()
             conn.execute('INSERT INTO issue_updates(issue_id,actor_id,status,note) VALUES(?,?,?,?)', (issue['id'], user['id'], 'reported', 'Issue submitted'))
     except Exception:
@@ -114,7 +129,9 @@ def edit_issue(issue_id: int, payload: IssuePatch, user=Depends(current_user)):
                 str(merged['description']),
                 str(merged.get('address') or ''),
             )
-        allowed = {'title','description','category','latitude','longitude','address','risk_percentage'}
+        allowed = {'title','description','category','latitude','longitude','address','risk_percentage','category_source'}
+        if 'category' in changes:
+            changes.setdefault('category_source', 'user')
         fields = {key: value for key, value in changes.items() if key in allowed}
         assignments = [f'{key}=?' for key in fields]
         assignments.append("updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now')")

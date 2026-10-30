@@ -44,6 +44,15 @@ CREATE TABLE IF NOT EXISTS issue_updates (
 CREATE INDEX IF NOT EXISTS idx_issues_status ON issues(status);
 CREATE INDEX IF NOT EXISTS idx_issues_created ON issues(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_issues_assignee ON issues(assigned_worker_id);
+CREATE TABLE IF NOT EXISTS password_reset_otps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+    code_hash TEXT NOT NULL,
+    attempts INTEGER NOT NULL DEFAULT 0 CHECK(attempts >= 0),
+    created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+    expires_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_otp_expires ON password_reset_otps(expires_at);
 """
 
 @contextmanager
@@ -67,3 +76,5 @@ def init_db():
         cols = {row[1] for row in conn.execute('PRAGMA table_info(issues)').fetchall()}
         if 'ai_analysis' not in cols:
             conn.execute('ALTER TABLE issues ADD COLUMN ai_analysis TEXT')
+        if 'category_source' not in cols:
+            conn.execute("ALTER TABLE issues ADD COLUMN category_source TEXT DEFAULT 'user'")

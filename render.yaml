@@ -16,6 +16,18 @@ services:
         generateValue: true
       - key: CIVICFIX_CORS_ORIGINS
         sync: false          # frontend URL, set during apply
+      - key: CIVICFIX_GEMINI_API_KEY
+        sync: false          # optional - AI category auto-detection
+      - key: CIVICFIX_SMTP_HOST
+        sync: false          # optional - OTP email delivery
+      - key: CIVICFIX_SMTP_PORT
+        sync: false
+      - key: CIVICFIX_SMTP_USER
+        sync: false
+      - key: CIVICFIX_SMTP_PASSWORD
+        sync: false          # mark this one Secret in the dashboard
+      - key: CIVICFIX_SMTP_FROM
+        sync: false
       - key: CIVICFIX_ADMIN_EMAIL
         sync: false          # first admin account, created on startup
       - key: CIVICFIX_ADMIN_PASSWORD
